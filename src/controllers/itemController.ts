@@ -1,0 +1,133 @@
+import { Request, Response } from 'express';
+import ShoppingListItem, { IShoppingListItem } from '../models/ShoppingListItem';
+import ShoppingList from '../models/ShoppingList';
+import { AuthRequest } from '../middleware/authMiddleware';
+
+export const createItem = async (req: AuthRequest, res: Response) => {
+  try {
+    const { 
+      listId, name, qty, unit, category, store, 
+      priority, reminder, deadline 
+    } = req.body;
+    const list = await ShoppingList.findById(listId);
+    
+    if (!list) {
+      return res.status(404).json({ message: 'List not found' });
+    }
+    
+    if (list.userId.toString() !== req.user.id && !list.groupId) {
+       return res.status(403).json({ message: 'Not authorized to add items to this list' });
+    }
+
+    // Create the Item
+    const newItem = await ShoppingListItem.create({
+      listId,
+      authorId: req.user.id,
+      name,
+      qty: qty || 1,
+      unit: unit || 'pcs',
+      category,
+      store,
+      priority: priority || 'normal',
+      deadline,
+      reminder: reminder || 0,
+      isReminderSent: false,
+      isDeleted: false
+    });
+
+    res.status(201).json(newItem);
+
+  } catch (error) {
+    console.error('Create Item Error:', error);
+    res.status(500).json({ message: 'Server error creating item' });
+  }
+};
+
+export const getItems = async (req: AuthRequest, res: Response) => {
+  try {
+    const { listId, since } = req.query;
+
+    if (!listId) {
+      return res.status(400).json({ message: 'Please provide a listId' });
+    }
+
+    const query: any = { listId };
+
+    if (since) {
+      query.updatedAt = { $gt: new Date(since as string) };
+    } else {
+      query.isDeleted = false;
+    }
+
+    const items = await ShoppingListItem.find(query).sort({ isChecked: 1, createdAt: -1 });
+
+    res.status(200).json(items);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error fetching items' });
+  }
+};
+
+// This handles: Checking off, Renaming, Assigning, Changing Qty
+export const updateItem = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Find Item
+    const item = await ShoppingListItem.findById(id);
+    if (!item) return res.status(404).json({ message: 'Item not found' });
+
+    // Security Check (Verify ownership of the item or list)
+    if (item.authorId.toString() !== req.user.id) {
+       const parentList = await ShoppingList.findById(item.listId);
+       if (parentList && parentList.userId.toString() !== req.user.id) {
+           return res.status(403).json({ message: 'Not authorized' });
+       }
+    }
+
+    // Handle "Reminder Reset" Logic
+    if (req.body.deadline && req.body.deadline !== item.deadline) {
+        req.body.isReminderSent = false;
+    }
+
+    // Update
+    const updatedItem = await ShoppingListItem.findByIdAndUpdate(
+      id,
+      req.body, 
+      { new: true }
+    );
+
+    res.status(200).json(updatedItem);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error updating item' });
+  }
+};
+
+export const deleteItem = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const item = await ShoppingListItem.findById(id);
+    if (!item) return res.status(404).json({ message: 'Item not found' });
+
+    // Security Check
+    if (item.authorId.toString() !== req.user.id) {
+         const parentList = await ShoppingList.findById(item.listId);
+         if (parentList && parentList.userId.toString() !== req.user.id) {
+             return res.status(403).json({ message: 'Not authorized' });
+        }
+    }
+
+    item.isDeleted = true;
+    await item.save();
+
+    res.status(200).json({ message: 'Item deleted', id: item._id });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error deleting item' });
+  }
+};

@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    /* Base Options */
+    "target": "ES2020",                       /* Modern Node.js versions support ES2020 features */
+    "module": "commonjs",                     /* Standard for Node.js backends */
+    "moduleResolution": "node",               /* Helps TS find files like Node does */
+    "baseUrl": "./",                          /* Base directory to resolve non-relative module names */
+    "outDir": "./dist",                       /* Where .js files go after 'npm run build' */
+    "rootDir": "./src",                       /* Where your .ts files are located */
+    
+    /* Strictness */
+    "strict": true,                           /* Enable all strict type-checking options */
+    "noImplicitAny": false,                   /* Allows 'any' without error (easier for beginners) */
+    "esModuleInterop": true,                  /* Crucial for importing 'express' and other CommonJS modules */
+    "skipLibCheck": true,                     /* Skip type checking of declaration files */
+    "forceConsistentCasingInFileNames": true, /* Disallow inconsistently-cased references to the same file */
+    "resolveJsonModule": true                 /* Allows importing .json files */
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,68 @@
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load environment variables
+dotenv.config();
+
+// Import Routes
+import authRoutes from './routes/authRoutes';
+import userRoutes from './routes/userRoutes';
+import listRoutes from './routes/listRoutes';
+import itemRoutes from './routes/itemRoutes';
+import groupRoutes from './routes/groupRoutes';
+import noteRoutes from './routes/noteRoutes';
+import pollRoutes from './routes/pollRoutes';
+import notificationRoutes from './routes/notificationRoutes';
+import activityRoutes from './routes/activityRoutes';
+import uploadRoutes from './routes/uploadRoutes';
+
+// Initialize App
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Middleware
+app.use(express.json()); // Parse JSON bodies
+app.use(cors());         // Allow Frontend to talk to Backend
+app.use(helmet({
+    crossOriginResourcePolicy: false, // Allows loading images from /uploads
+})); 
+app.use(morgan('dev'));  // Log requests to terminal
+
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
+
+// Database connection
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/docket-db';
+
+mongoose.connect(MONGO_URI)
+  .then(() => console.log('Connected to MongoDB'))
+  .catch((err) => {
+    console.error('MongoDB Connection Error:', err);
+    process.exit(1);
+  });
+
+// Routes
+app.get('/', (req, res) => {
+  res.send('Docket API is running 🚀');
+});
+
+// Mount the routers
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/lists', listRoutes);
+app.use('/api/items', itemRoutes);
+app.use('/api/groups', groupRoutes);
+app.use('/api/notes', noteRoutes);
+app.use('/api/polls', pollRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/activity', activityRoutes);
+app.use('/api/upload', uploadRoutes);
+
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
