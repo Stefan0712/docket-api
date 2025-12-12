@@ -1,4 +1,4 @@
-import express from 'express';
+const express = require('express');
 import { registerUser, loginUser, getMe } from '../controllers/authController';
 import { protect } from '../middleware/authMiddleware';
 

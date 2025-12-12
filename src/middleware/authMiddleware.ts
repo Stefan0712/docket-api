@@ -20,7 +20,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
     req.headers.authorization.startsWith('Bearer')
   ) {
     try {
-      // Extract the token (Remove the word "Bearer ")
+      // Extract the token
       token = req.headers.authorization.split(' ')[1];
 
       // Verify the Token

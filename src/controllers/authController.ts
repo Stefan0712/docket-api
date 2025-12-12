@@ -9,6 +9,7 @@ const generateToken = (id: string) => {
     expiresIn: process.env.JWT_EXPIRE || '30d',
   } as jwt.SignOptions); 
 };
+
 export const registerUser = async (req: Request, res: Response) => {
   try {
     const { username, email, password } = req.body;
@@ -28,9 +29,11 @@ export const registerUser = async (req: Request, res: Response) => {
     });
     if (user) {
       res.status(201).json({
-        _id: user._id,
-        username: user.username,
-        email: user.email,
+        user: {
+          _id: user._id,
+          username: user.username,
+          email: user.email,
+        },
         token: generateToken(user._id.toString()), 
       });
     } else {
@@ -48,10 +51,12 @@ export const loginUser = async (req: Request, res: Response) => {
     const user: IUser | null = await User.findOne({ email });
     if (user && (await bcrypt.compare(password, user.password || ''))) {
       res.json({
-        _id: user._id,
-        username: user.username,
-        email: user.email,
-        avatarUrl: user.avatarUrl,
+        user: {
+          _id: user._id,
+          username: user.username,
+          email: user.email,
+          avatarUrl: user.avatarUrl,
+        },
         token: generateToken(user._id.toString()),
       });
     } else {
@@ -63,6 +68,7 @@ export const loginUser = async (req: Request, res: Response) => {
   }
 };
 
+// Get all user data
 export const getMe = async (req: any, res: Response) => {
   const user = await User.findById(req.user.id).select('-password');
   res.status(200).json(user);
