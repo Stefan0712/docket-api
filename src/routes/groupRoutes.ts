@@ -1,10 +1,14 @@
-import express from 'express';
+const express = require('express');
 import { 
   createGroup, 
   getMyGroups, 
   getGroupById, 
-  addMember, 
-  leaveGroup 
+  leaveGroup, 
+  generateInviteToken,
+  acceptInvite,
+  lookupInvite,
+  deleteGroup,
+  updateGroup
 } from '../controllers/groupController';
 import { protect } from '../middleware/authMiddleware';
 
@@ -17,7 +21,11 @@ router.route('/')
   .get(getMyGroups);
 
 router.get('/:id', getGroupById);
-router.post('/:id/invite', addMember);
+router.delete('/:id/delete', deleteGroup);
+router.put('/:id/edit', updateGroup);
+router.get('/invite/lookup', lookupInvite);
 router.delete('/:id/leave', leaveGroup);
+router.post('/:groupId/invite/generate', generateInviteToken);
+router.post('/invite/accept', acceptInvite);
 
 export default router;
