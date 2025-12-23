@@ -88,7 +88,15 @@ interface IPopulatedMember {
 export const getGroupById = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+
+    const [listCount, noteCount, pollCount] = await Promise.all([
+      ShoppingList.countDocuments({ groupId: id }),
+      Note.countDocuments({ groupId: id }),
+      Poll.countDocuments({ groupId: id })
+    ]);
+
     const populatedGroup = await Group.findById(id).populate('members.userId', 'username').lean(); 
+
     if (!populatedGroup) {
       return res.status(404).json({ message: 'Group not found' });
     }
@@ -102,6 +110,9 @@ export const getGroupById = async (req: AuthRequest, res: Response) => {
     // Return group data with the formatted members array
     const finalGroup = {
       ...populatedGroup,
+      listCount,
+      noteCount,
+      pollCount,
       members: (populatedGroup.members as unknown as IPopulatedMember[]).map(member => ({
         userId: member.userId._id, 
         username: member.userId.username, 
