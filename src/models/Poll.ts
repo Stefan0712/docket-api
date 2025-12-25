@@ -1,43 +1,27 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { Poll } from './models';
 
-export interface IVote {
-  userId: mongoose.Types.ObjectId;
-  answer: string;
-}
+const PollOptionSchema = new Schema({
+  text: { type: String, required: true },
+  votes: [{ type: Schema.Types.ObjectId, ref: 'User' }] // Array of User ids
+});
 
-export interface IPollOption {
-  _id: string;
-  text: string;
-  votes: IVote[];
-}
+const PollSchema = new Schema({
+  groupId: { type: Schema.Types.ObjectId, ref: 'Group', required: true },
+  authorId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  authorUsername: { type: String, required: true },
+  title: { type: String, required: true, trim: true },
+  description: { type: String, trim: true },
+  options: [PollOptionSchema],
+  allowCustomOptions: { type: Boolean, default: false },
+  expiresAt: { type: Date, required: true },
+  isClosed: { type: Boolean, default: false },
+  
+  clientId: { type: String, default: null } 
+}, { 
+  timestamps: true // Automatically creates createdAt and updatedAt
+});
 
-export interface IPoll extends Document {
-  groupId: mongoose.Types.ObjectId;
-  question: string;
-  options: IPollOption[];
-  createdAt: Date;
-  updatedAt: Date;
-}
+PollSchema.index({ groupId: 1, createdAt: -1 });
 
-const PollSchema: Schema = new Schema(
-  {
-    groupId: { type: Schema.Types.ObjectId, ref: 'Group', required: true },
-    question: { type: String, required: true, trim: true },
-    options: [
-      {
-        text: { type: String, required: true },
-        votes: [
-          {
-            userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-            answer: { type: String, required: true }
-          }
-        ]
-      }
-    ]
-  },
-  { timestamps: true }
-);
-
-PollSchema.index({ groupId: 1 });
-
-export default mongoose.model<IPoll>('Poll', PollSchema);
+export default mongoose.model<Poll>('Poll', PollSchema);

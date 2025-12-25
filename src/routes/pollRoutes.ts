@@ -1,8 +1,10 @@
-const express = require('express');
+import express from 'express';
 import { 
   createPoll, 
-  getPolls, 
-  vote, 
+  getGroupPolls, 
+  getPollById, 
+  votePoll, 
+  addPollOption, 
   deletePoll 
 } from '../controllers/pollController';
 import { protect } from '../middleware/authMiddleware';
@@ -10,12 +12,11 @@ import { protect } from '../middleware/authMiddleware';
 const router = express.Router();
 
 router.use(protect);
-
-router.route('/')
-  .post(createPoll)
-  .get(getPolls);
-
+router.get('/group/:groupId', getGroupPolls);
+router.post('/', createPoll);
+router.get('/:id', getPollById);
 router.delete('/:id', deletePoll);
-router.post('/:id/vote', vote);
+router.post('/vote', votePoll);
+router.post('/option', addPollOption);
 
 export default router;

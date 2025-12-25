@@ -142,22 +142,27 @@ export interface Note {
     isDeleted: boolean;
 }
 
-export interface Vote {
-    userId: string;
-    answer: string;
+export interface PollOption {
+  _id?: string;
+  text: string;
+  votes: string[]; 
 }
+
 export interface Poll {
-    _id: string;
-    groupId: string;
-    authorId: string;
-    question: string;
-    createdAt: Date;
-    options: {
-        _id: string;
-        text: string;
-        votes: Vote[];
-    };
-    isDirty: boolean;
+  _id: string;
+  groupId: string;
+  authorId: string;
+  authorUsername: string;
+  title: string;
+  description?: string;
+  options: PollOption[];
+  allowCustomOptions: boolean;
+  expiresAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  isDirty?: boolean;
+  clientId?: string | null;
+  isClosed?: boolean;
 }
 
 export type NotificationCategory = 

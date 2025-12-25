@@ -10,107 +10,107 @@ const isMember = async (groupId: string, userId: string) => {
 
 export const createPoll = async (req: AuthRequest, res: Response) => {
   try {
-    const { groupId, question, options } = req.body;
+    const { groupId, title, description, options, allowCustomOptions, expiresAt } = req.body;
 
-    if (!await isMember(groupId, req.user.id)) {
-        return res.status(403).json({ message: 'Not authorized' });
+    if (!options || options.length < 2) {
+      return res.status(400).json({ message: "Poll must have at least 2 options" });
     }
-
-    const formattedOptions = options.map((opt: string) => ({
-        text: opt,
-        votes: []
-    }));
 
     const newPoll = await Poll.create({
       groupId,
-      question,
-      options: formattedOptions
+      authorId: req.user.id,
+      authorUsername: req.user.username,
+      title,
+      description,
+      options: options.map((text: string) => ({ text, votes: [] })),
+      allowCustomOptions,
+      expiresAt,
     });
 
     res.status(201).json(newPoll);
-
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error creating poll' });
+    res.status(500).json({ message: "Error creating poll", error });
   }
 };
 
-export const getPolls = async (req: AuthRequest, res: Response) => {
+export const getGroupPolls = async (req: AuthRequest, res: Response) => {
   try {
-    const { groupId } = req.query;
-
-    if (!groupId) return res.status(400).json({ message: 'Group ID required' });
-
-    if (!await isMember(groupId as string, req.user.id)) {
-        return res.status(403).json({ message: 'Not authorized' });
-    }
-
-    const polls = await Poll.find({ groupId })
-      .sort({ createdAt: -1 });
-
-    res.status(200).json(polls);
-
+    const polls = await Poll.find({ groupId: req.params.groupId }).sort({ createdAt: -1 }).lean();
+    res.json(polls);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error fetching polls' });
+    res.status(500).json({ message: "Error fetching polls" });
   }
 };
 
-export const vote = async (req: AuthRequest, res: Response) => {
+export const getPollById = async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params; // Poll ID
-    const { optionId } = req.body;
+    const poll = await Poll.findById(req.params.id).lean();
+    if (!poll) return res.status(404).json({ message: "Poll not found" });
+    res.json(poll);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching poll" });
+  }
+};
 
-    const poll = await Poll.findById(id);
-    if (!poll) return res.status(404).json({ message: 'Poll not found' });
+export const votePoll = async (req: AuthRequest, res: Response) => {
+  try {
+    const { pollId, optionId } = req.body;
+    const userId = req.user.id;
 
-    if (!await isMember(poll.groupId.toString(), req.user.id)) {
-        return res.status(403).json({ message: 'Not authorized to vote' });
+    const poll = await Poll.findById(pollId);
+    if (!poll) return res.status(404).json({ message: "Poll not found" });
+
+    if (poll.isClosed || new Date(poll.expiresAt) < new Date()) {
+      return res.status(400).json({ message: "Poll is closed" });
     }
 
-    // Clear Previous Votes
-    poll.options.forEach(opt => {
-        opt.votes = opt.votes.filter(v => v.userId.toString() !== req.user.id);
-    });
+    await Poll.updateOne(
+      { _id: pollId },
+      { $pull: { "options.$[].votes": userId } }
+    );
 
-    // Add New Vote
-    const targetOption = poll.options.find(opt => opt._id.toString() === optionId);
+    const updatedPoll = await Poll.findOneAndUpdate(
+      { _id: pollId, "options._id": optionId },
+      { $addToSet: { "options.$.votes": userId } },
+      { new: true }
+    );
+
+    res.json(updatedPoll);
+  } catch (error) {
+    res.status(500).json({ message: "Voting failed" });
+  }
+};
+
+export const addPollOption = async (req: AuthRequest, res: Response) => {
+  try {
+    const { pollId, text } = req.body;
+    const poll = await Poll.findById(pollId);
+
+    if (!poll) return res.status(404).json({ message: "Poll not found" });
+    if (!poll.allowCustomOptions) return res.status(403).json({ message: "Forbidden" });
+
+    poll.options.push({ text, votes: [] });
+    const savedPoll = await poll.save();
+    const newOption = savedPoll.options[savedPoll.options.length - 1];
     
-    if (targetOption) {
-        targetOption.votes.push({
-            userId: req.user.id,
-            answer: targetOption.text
-        });
-    } else {
-        return res.status(404).json({ message: 'Option not found' });
-    }
-
-    await poll.save();
-    res.status(200).json(poll);
-
+    res.status(201).json(newOption);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error voting' });
+    res.status(500).json({ message: "Error" });
   }
 };
 
 export const deletePoll = async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
-    const poll = await Poll.findById(id);
-    
-    if (!poll) return res.status(404).json({ message: 'Poll not found' });
+    const poll = await Poll.findById(req.params.id);
+    if (!poll) return res.status(404).json({ message: "Poll not found" });
 
-    // Check permissions 
-    if (!await isMember(poll.groupId.toString(), req.user.id)) {
-         return res.status(403).json({ message: 'Not authorized' });
+    if (poll.authorId.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Not authorized" });
     }
 
     await poll.deleteOne();
-    res.status(200).json({ message: 'Poll deleted' });
-
+    res.json({ message: "Poll deleted" });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error deleting poll' });
+    res.status(500).json({ message: "Delete failed" });
   }
 };
