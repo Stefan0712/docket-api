@@ -1,20 +1,22 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Model } from 'mongoose';
 
-export type NotificationCategory = 'ASSIGNMENT' | 'MENTION' | 'GROUP' | 'REMINDER';
+export interface INotificationMetadata {
+  listId?: mongoose.Types.ObjectId;
+  itemId?: mongoose.Types.ObjectId;
+  noteId?: mongoose.Types.ObjectId;
+  pollId?: mongoose.Types.ObjectId;
+}
 
 export interface INotification extends Document {
   recipientId: mongoose.Types.ObjectId;
   authorId?: mongoose.Types.ObjectId;
   groupId?: mongoose.Types.ObjectId;
-  category: NotificationCategory;
+  category: 'ASSIGNMENT' | 'MENTION' | 'GROUP' | 'REMINDER';
   message: string;
   isRead: boolean;
-  metadata?: {
-    listId?: string;
-    itemId?: string;
-    noteId?: string;
-    pollId?: string;
-  };
+  metadata?: INotificationMetadata;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const NotificationSchema: Schema = new Schema(
@@ -44,4 +46,4 @@ NotificationSchema.index({ recipientId: 1, createdAt: -1 });
 NotificationSchema.index({ recipientId: 1, isRead: 1 });
 NotificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 2592000 });
 
-export default mongoose.model<INotification>('Notification', NotificationSchema);
+export const NotificationModel = mongoose.model<INotification>('Notification', NotificationSchema);

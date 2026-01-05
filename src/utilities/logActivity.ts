@@ -1,5 +1,4 @@
 import ActivityLog from '../models/ActivityLog';
-import { createNotificationsFromActivity } from './notificationHelpers';
 
 export const logActivity = async (input: any): Promise<void> => {
     try {
@@ -9,16 +8,9 @@ export const logActivity = async (input: any): Promise<void> => {
         }
 
         console.log(input)
-        // 1. Create a new instance
         const logEntry = new ActivityLog(input);
-
-        // 2. Save it
         const savedLog = await logEntry.save();
 
-        // // 3. Trigger Notifications
-        // if (savedLog) {
-        //     await createNotificationsFromActivity(savedLog.toObject());
-        // }
 
     } catch (error) {
         console.error('CRITICAL: logActivity failed:', error);

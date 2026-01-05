@@ -63,17 +63,6 @@ export interface PurchasedItem {
     isDirty: boolean;
 }
 
-export interface Category {
-    _id: string;
-    name: string;
-    color: string;
-}
-
-export interface Store {
-    _id: string;
-    name: string;
-    color?: string;
-}
 
 export interface User {
     _id: string;

@@ -1,22 +1,25 @@
 import { Response } from 'express';
-import Notification from '../models/Notification';
+import { NotificationModel } from '../models/Notification';
 import { AuthRequest } from '../middleware/authMiddleware';
 
 export const getNotifications = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user.id;
-    const { lastSyncTime } = req.query; // Get the timestamp from the frontend
+    const { lastSyncTime } = req.query;
 
     let query: any = { recipientId: userId };
 
-    // Only fetch if created AFTER the last sync
-    if (lastSyncTime) {
-      query.createdAt = { $gt: new Date(lastSyncTime as string) };
+    if (lastSyncTime && typeof lastSyncTime === 'string') {
+      const date = new Date(lastSyncTime);
+      if (!isNaN(date.getTime())) {
+        query.createdAt = { $gt: date };
+      }
     }
 
-    const notifications = await Notification.find(query)
+    const notifications = await NotificationModel.find(query)
       .sort({ createdAt: -1 })
-      .limit(50); 
+      .limit(50)
+      .lean();
 
     res.status(200).json(notifications);
   } catch (error) {
@@ -25,66 +28,32 @@ export const getNotifications = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const markAsRead = async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-
-    const notification = await Notification.findById(id);
-
-    if (!notification) {
-      return res.status(404).json({ message: 'Notification not found' });
-    }
-
-    // Security: Only the recipient can mark it as read
-    if (notification.recipientId.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Not authorized' });
-    }
-
-    notification.isRead = true;
-    await notification.save();
-
-    res.status(200).json(notification);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error updating notification' });
-  }
-};
-
-export const markAllAsRead = async (req: AuthRequest, res: Response) => {
-  try {
-    const userId = req.user.id;
-
-    await Notification.updateMany(
-      { recipientId: userId, isRead: false },
-      { $set: { isRead: true } }
-    );
-
-    res.status(200).json({ message: 'All notifications marked as read' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error marking all read' });
-  }
-};
-
 export const deleteNotification = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    
+    const result = await NotificationModel.deleteOne({ 
+      _id: id, 
+      recipientId: req.user.id 
+    });
 
-    const notification = await Notification.findById(id);
-
-    if (!notification) {
+    if (result.deletedCount === 0) {
       return res.status(404).json({ message: 'Notification not found' });
     }
 
-    if (notification.recipientId.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Not authorized' });
-    }
-
-    await notification.deleteOne();
-
     res.status(200).json({ message: 'Notification removed' });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: 'Server error deleting notification' });
+  }
+};
+
+export const clearAllNotifications = async (req: AuthRequest, res: Response) => {
+  try {
+    await NotificationModel.deleteMany({ recipientId: req.user.id });
+
+    res.status(200).json({ message: 'All notifications cleared' });
+  } catch (error) {
+    console.error('Clear All Error:', error);
+    res.status(500).json({ message: 'Server error clearing notifications' });
   }
 };
