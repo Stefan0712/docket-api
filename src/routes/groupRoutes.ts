@@ -6,7 +6,9 @@ import {
   getGroupById, 
   leaveGroup, 
   deleteGroup,
-  updateGroup
+  updateGroup,
+  updateRole,
+  kickUser
 } from '../controllers/groupController';
 import { protect } from '../middleware/authMiddleware';
 
@@ -21,6 +23,9 @@ router.route('/')
 router.get('/:id', getGroupById);
 router.delete('/:id', deleteGroup);
 router.put('/:id', updateGroup);
+router.put('/:id/role', updateRole);
+router.post('/:id/kick', kickUser);
+
 router.get('/invite/lookup', lookupInvite);
 router.delete('/:id/leave', leaveGroup);
 router.post('/:groupId/invite/generate', generateInviteToken);

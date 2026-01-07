@@ -72,7 +72,7 @@ export interface INotificationPreferences {
 export interface GroupMember {
   userId: Types.ObjectId | string;
   username?: string;
-  role: 'owner' | 'moderator' | 'member';
+  role: 'owner' | 'admin' | 'moderator' | 'member';
   joinedAt: Date;
   isPinned: boolean; 
   notificationPreferences: INotificationPreferences;

@@ -35,7 +35,7 @@ const GroupSchema: Schema = new Schema(
         },
         role: { 
           type: String, 
-          enum: ['owner', 'moderator', 'member'], 
+          enum: ['owner', 'admin', 'moderator', 'member'], 
           default: 'member' 
         },
         joinedAt: { 
