@@ -13,7 +13,7 @@ export const createItem = async (req: AuthRequest, res: Response) => {
   try {
     const { 
       listId, name, qty, unit, category, store, 
-      priority, reminder, deadline 
+      priority, reminder, deadline, description
     } = req.body;
     const list = await ShoppingList.findById(listId);
     
@@ -29,6 +29,7 @@ export const createItem = async (req: AuthRequest, res: Response) => {
     const newItem = await ShoppingListItem.create({
       listId,
       authorId: req.user.id,
+      description,
       name,
       qty,
       unit,

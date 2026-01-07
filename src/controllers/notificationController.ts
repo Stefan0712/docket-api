@@ -20,7 +20,7 @@ export const getNotifications = async (req: AuthRequest, res: Response) => {
       .sort({ createdAt: -1 })
       .limit(50)
       .lean();
-
+    console.log(notifications.length+' notifications sent!')
     res.status(200).json(notifications);
   } catch (error) {
     console.error('Get Notifications Error:', error);

@@ -1,13 +1,8 @@
 import { Request, Response } from 'express';
 import Poll from '../models/Poll';
-import Group from '../models/Group';
 import { AuthRequest } from '../middleware/authMiddleware';
-import { notifyGroup } from 'src/utilities/notificationHelpers';
-
-const isMember = async (groupId: string, userId: string) => {
-    const group = await Group.findOne({ _id: groupId, 'members.userId': userId });
-    return !!group;
-};
+import { notifyGroup } from '../utilities/notificationHelpers';
+import { logActivity } from '../utilities/logActivity';
 
 export const createPoll = async (req: AuthRequest, res: Response) => {
   try {
@@ -27,11 +22,25 @@ export const createPoll = async (req: AuthRequest, res: Response) => {
       allowCustomOptions,
       expiresAt,
     });
+    if (groupId) {
+      try {
+        await logActivity({
+          groupId: groupId,
+          authorId: req.user.id,
+          authorName: req.user.username,
+          category: 'CONTENT',
+          message: `${req.user.username} created a new poll ${title}`,
+          metadata: { pollId: newPoll._id }
+        });
+      } catch (logError) {
+        console.error("Activity logging failed, but list was created:", logError);
+      }
+    }
     notifyGroup({
       groupId: groupId,
       authorId: req.user.id,
       category: 'POLL',
-      message: `${req.user.name} created a new poll: "${title}"`,
+      message: `A new poll was created: "${title}"`,
       metadata: { 
         pollId: newPoll._id 
       }
@@ -85,6 +94,32 @@ export const endPoll = async (req: AuthRequest, res: Response) => {
 
     // Save the changes
     const updatedPoll = await poll.save();
+
+    if (poll.groupId) {
+      try {
+        await logActivity({
+          groupId: poll.groupId,
+          authorId: req.user.id,
+          authorName: req.user.username,
+          category: 'CONTENT',
+          message: `${req.user.username} ended poll ${poll.title}`,
+          metadata: { pollId: poll._id }
+        });
+        notifyGroup({
+          groupId: poll.groupId,
+          authorId: req.user.id,
+          category: 'POLL',
+          message: `Poll "${poll.title}" ended by ${req.user.username || 'another user.'}`,
+          metadata: { 
+            pollId: poll._id 
+        }
+    });
+      } catch (logError) {
+        console.error("Activity logging failed, but list was created:", logError);
+      }
+    }
+    
+
     res.json(updatedPoll);
   } catch (error) {
     res.status(500).json({ message: "Failed to end poll", error });

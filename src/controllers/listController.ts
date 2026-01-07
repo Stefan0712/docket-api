@@ -2,11 +2,11 @@ import { Response } from 'express';
 import ShoppingList from '../models/ShoppingList';
 import { AuthRequest } from '../middleware/authMiddleware';
 import {ShoppingList as IShoppingList} from '../models/models';
-import { userIsMember } from '../utilities/groupUtilities';
 import ShoppingListItem from '../models/ShoppingListItem';
 import Group from '../models/Group';
 import mongoose from 'mongoose';
 import { logActivity } from '../utilities/logActivity';
+import { checkPermission, GroupAction } from '../utilities/permissions';
 
 
 // Create a new list
@@ -14,6 +14,15 @@ export const createList = async (req: AuthRequest, res: Response) => {
   try {
     const { name, description, color, groupId, isPinned } = req.body;
     
+    const group = await Group.findById(groupId)
+      .select('members ownerId settings') 
+      .lean();
+    if (!group) return res.status(404).json({ message: 'Group not found' });
+
+    if (!checkPermission(group, req.user.id, GroupAction.CREATE_AND_VIEW)) {
+      return res.status(404).json({ message: "You are not authorized to create a list" })
+    }
+
     const newList: IShoppingList = await ShoppingList.create({
       authorId: req.user.id,
       name,
@@ -47,26 +56,27 @@ export const createList = async (req: AuthRequest, res: Response) => {
 export const getLists = async (req: AuthRequest, res: Response) => {
   try {
     const { groupId } = req.query;
-    const requestingUserId = req.user.id
 
+    // Check if there is any groupId
     if (!groupId || Array.isArray(groupId)) {
       return res.status(400).json({ message: 'groupId required and must be a single value.' });
     }
 
-    const group = await Group.findOne({
-        _id: groupId, 
-        'members.userId': requestingUserId
-    });
-
-    if (!group) {
-        return res.status(403).json({ message: 'Not authorized to view lists in this group or group not found.' });
+    // Check if the user has the right permissions
+    const group = await Group.findById(groupId)
+      .select('members ownerId settings') 
+      .lean();
+    // Check if the group exists
+    if (!group) return res.status(404).json({ message: 'Group not found' });
+    //Check the role
+    if (!checkPermission(group, req.user.id, GroupAction.CREATE_AND_VIEW)) {
+      return res.status(404).json({ message: "You are not authorized to create a list" })
     }
-    const objectGroupId = new mongoose.Types.ObjectId(groupId as string); 
+
     
-    const pipelineFilter = { groupId: objectGroupId };
-    
+    const groupObjectId = new mongoose.Types.ObjectId(groupId as string);
     const listsWithCounts = await ShoppingList.aggregate([
-      {$match: pipelineFilter},
+      {$match: {groupId}},
       {
         $lookup: {
           from: 'shoppinglistitems',
@@ -83,7 +93,7 @@ export const getLists = async (req: AuthRequest, res: Response) => {
               $filter: {
                 input: '$items',
                 as: 'item',
-                cond: { $eq: ['$$item.isCompleted', true] }
+                cond: { $eq: ['$$item.isChecked', true] }
               }
             }
           }
@@ -110,13 +120,18 @@ export const getListById = async (req: AuthRequest, res: Response) => {
     if (!list) {
       return res.status(404).json({ message: 'List not found' });
     }
-    
     const groupId = list.groupId; 
-    const isMember = await userIsMember(groupId, req.user.id); 
-    if (list.authorId.toString() !== req.user.id && !isMember) {
-      return res.status(403).json({ message: 'Not authorized to view this list' });
-    }
 
+    // Check if the user has the right permissions
+    const group = await Group.findById(groupId)
+      .select('members ownerId settings') 
+      .lean();
+    // Check if the group exists
+    if (!group) return res.status(404).json({ message: 'Group not found' });
+    //Check the role
+    if (!checkPermission(group, req.user.id, GroupAction.CREATE_AND_VIEW)) {
+      return res.status(404).json({ message: "You are not authorized to view this list" })
+    }
     res.status(200).json(list);
   } catch (error) {
     console.error(error);
@@ -131,18 +146,26 @@ export const updateList = async (req: AuthRequest, res: Response) => {
 
     if (!list) return res.status(404).json({ message: 'List not found' });
 
-    // Security Check
-    const isMember = await userIsMember(list.groupId, req.user.id); 
-    if (list.authorId.toString() !== req.user.id || !isMember) {
-      return res.status(403).json({ message: 'Not authorized' });
+    // Check if the user has the right permissions
+    const group = await Group.findById(list.groupId)
+      .select('members ownerId settings') 
+      .lean();
+    // Check if the group exists
+    if (!group) return res.status(404).json({ message: 'Group not found' });
+    //Check the role
+    if (!checkPermission(group, req.user.id, GroupAction.MODIFY_OWN_RESOURCE, list.authorId.toString())) {
+      return res.status(404).json({ message: "You are not authorized to update this list" })
     }
 
     // Update fields
-    const updatedList = await ShoppingList.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true } 
-    );
+    const { name, description, icon, color } = req.body;
+    if ( name !== undefined) list.name = name;
+    if ( description !== undefined) list.description = description;
+    if ( icon !== undefined) list.icon = icon;
+    if ( color !== undefined) list.color = color;
+
+    const updatedList = await list.save();
+
     try {
       await logActivity({
         groupId: list.groupId,
@@ -153,7 +176,7 @@ export const updateList = async (req: AuthRequest, res: Response) => {
         metadata: { listId: list._id }
       });
     } catch (logError) {
-      console.error("Activity logging failed, but list was created:", logError);
+      console.error("Activity logging failed, but list was updated:", logError);
     }
     res.status(200).json(updatedList);
   } catch (error) {
@@ -168,13 +191,15 @@ export const deleteList = async (req: AuthRequest, res: Response) => {
     const list = await ShoppingList.findById(req.params.id);
 
     if (!list) return res.status(404).json({ message: 'List not found' });
-    let isAuthorized;
-    if (list.authorId.toString() === req.user.id) {
-      isAuthorized = true;
-    }
-
-    if (!isAuthorized) {
-      return res.status(403).json({ message: 'Not authorized' });
+    // Check if the user has the right permissions
+    const group = await Group.findById(list.groupId)
+      .select('members ownerId settings') 
+      .lean();
+    // Check if the group exists
+    if (!group) return res.status(404).json({ message: 'Group not found' });
+    //Check the role
+    if (!checkPermission(group, req.user.id, GroupAction.MODIFY_OWN_RESOURCE)) {
+      return res.status(404).json({ message: "You are not authorized to delete this list" })
     }
 
     const itemDeletionResult = await ShoppingListItem.deleteMany({ 
@@ -198,7 +223,7 @@ export const deleteList = async (req: AuthRequest, res: Response) => {
         metadata: { listId: list._id }
       });
     } catch (logError) {
-      console.error("Activity logging failed, but list was created:", logError);
+      console.error("Activity logging failed, but list was deleted:", logError);
     }
     res.status(200).json({ 
       message: 'List and all associated items permanently deleted.',

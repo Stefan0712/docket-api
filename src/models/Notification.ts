@@ -11,7 +11,7 @@ export interface INotification extends Document {
   recipientId: mongoose.Types.ObjectId;
   authorId?: mongoose.Types.ObjectId;
   groupId?: mongoose.Types.ObjectId;
-  category: 'ASSIGNMENT' | 'MENTION' | 'GROUP' | 'REMINDER';
+  category: 'ASSIGNMENT' | 'MENTION' | 'GROUP' | 'REMINDER' | 'POLL';
   message: string;
   isRead: boolean;
   metadata?: INotificationMetadata;
@@ -27,7 +27,7 @@ const NotificationSchema: Schema = new Schema(
     
     category: { 
       type: String, 
-      enum: ['ASSIGNMENT', 'MENTION', 'GROUP', 'REMINDER'], 
+      enum: ['ASSIGNMENT', 'MENTION', 'GROUP', 'REMINDER', 'POLL'], 
       required: true 
     },
     message: { type: String, required: true },

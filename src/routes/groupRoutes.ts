@@ -1,12 +1,10 @@
 const express = require('express');
+import { acceptInvite, generateInviteToken, lookupInvite } from '../controllers/inviteController';
 import { 
   createGroup, 
   getMyGroups, 
   getGroupById, 
   leaveGroup, 
-  generateInviteToken,
-  acceptInvite,
-  lookupInvite,
   deleteGroup,
   updateGroup
 } from '../controllers/groupController';

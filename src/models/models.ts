@@ -49,20 +49,6 @@ export interface ShoppingListItem {
     isDirty: boolean;
 }
 
-export interface PurchasedItem {
-    _id: string;
-    authorId: string;
-    productId?: string; // Link to an existing product but optinoal in case the product gets deleted
-    name: string; 
-    unit: string;
-    qty: number;
-    totalPrice: number;
-    storeId: string;
-    purchasedAt: Date;
-    isDiscounted?: boolean;
-    isDirty: boolean;
-}
-
 
 export interface User {
     _id: string;
