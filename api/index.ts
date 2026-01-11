@@ -67,7 +67,15 @@ const connectDB = async () => {
     console.error("MongoDB Connection Error:", error);
   }
 };
-
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next(); 
+  } catch (error) {
+    console.error("DB Connection Failed:", error);
+    res.status(500).json({ error: "Database Connection Failed" });
+  }
+});
 
 // Routes
 app.get('/', (req, res) => {
