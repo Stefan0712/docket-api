@@ -27,6 +27,13 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(express.json()); // Parse JSON bodies
+app.options('*', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', req.header('Origin') || '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(200);
+});
 
 const FRONTEND_IP = process.env.FRONT_END_IP; 
 const LOCALHOST_DEV = 'http://localhost:5173';
