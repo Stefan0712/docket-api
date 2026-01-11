@@ -8,7 +8,7 @@ interface DecodedToken {
   exp: number;
 }
 export interface AuthRequest extends Request {
-  user?: any; 
+  user: any; 
 }
 
 export const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
