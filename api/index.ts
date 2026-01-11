@@ -29,25 +29,28 @@ const PORT = process.env.PORT || 5000;
 app.use(express.json()); // Parse JSON bodies
 
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  'https://stefan0712.github.io' 
-];
+const ALLOWED_ORIGIN =
+  process.env.NODE_ENV === 'production'
+    ? 'https://app.example'
+    : '*';
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Credentials': 'true',
+    },
+  });
+}
 
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } else {
-      console.log("Blocked by CORS:", origin); 
-      return callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
-}));
+export async function GET() {
+  return Response.json({ ok: true }, {
+    headers: { 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
+  });
+}
 
 app.use(helmet({crossOriginResourcePolicy: false})); 
 app.use(morgan('dev'));
