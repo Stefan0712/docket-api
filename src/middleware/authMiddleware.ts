@@ -12,6 +12,10 @@ export interface AuthRequest extends Request {
 }
 
 export const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
+
+  if (req.method === 'OPTIONS') {
+    return next();
+  }
   let token;
 
   // Check if the "Authorization" header exists and starts with "Bearer"
