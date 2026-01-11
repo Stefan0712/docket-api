@@ -9,17 +9,17 @@ import path from 'path';
 dotenv.config();
 
 // Import Routes
-import authRoutes from './routes/authRoutes';
-import userRoutes from './routes/userRoutes';
-import listRoutes from './routes/listRoutes';
-import itemRoutes from './routes/itemRoutes';
-import groupRoutes from './routes/groupRoutes';
-import noteRoutes from './routes/noteRoutes';
-import pollRoutes from './routes/pollRoutes';
-import notificationRoutes from './routes/notificationRoutes';
-import activityRoutes from './routes/activityRoutes';
-import uploadRoutes from './routes/uploadRoutes';
-import syncRoutes from './routes/syncRoutes';
+import authRoutes from '../src/routes/authRoutes';
+import userRoutes from '../src/routes/userRoutes';
+import listRoutes from '../src/routes/listRoutes';
+import itemRoutes from '../src/routes/itemRoutes';
+import groupRoutes from '../src/routes/groupRoutes';
+import noteRoutes from '../src/routes/noteRoutes';
+import pollRoutes from '../src/routes/pollRoutes';
+import notificationRoutes from '../src/routes/notificationRoutes';
+import activityRoutes from '../src/routes/activityRoutes';
+import uploadRoutes from '../src/routes/uploadRoutes';
+import syncRoutes from '../src/routes/syncRoutes';
 
 // Initialize App
 const app = express();
@@ -83,6 +83,11 @@ app.use('/api/upload', uploadRoutes);
 
 
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => {
+    console.log(`Server running on ${port}`);
+  });
+}
+
+module.exports = app;
