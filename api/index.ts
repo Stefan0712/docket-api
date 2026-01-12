@@ -11,7 +11,6 @@ dotenv.config();
 // Import Routes
 import authRoutes from '../src/routes/authRoutes';
 import userRoutes from '../src/routes/userRoutes';
-import invitesRoutes from '../src/routes/invitesRoutes';
 import listRoutes from '../src/routes/listRoutes';
 import itemRoutes from '../src/routes/itemRoutes';
 import groupRoutes from '../src/routes/groupRoutes';
@@ -21,6 +20,7 @@ import notificationRoutes from '../src/routes/notificationRoutes';
 import activityRoutes from '../src/routes/activityRoutes';
 import uploadRoutes from '../src/routes/uploadRoutes';
 import syncRoutes from '../src/routes/syncRoutes';
+import invitesRoutes from '../src/routes/invitesRoutes'
 
 // Initialize App
 const app = express();
