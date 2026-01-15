@@ -21,7 +21,6 @@ import activityRoutes from '../src/routes/activityRoutes';
 import uploadRoutes from '../src/routes/uploadRoutes';
 import syncRoutes from '../src/routes/syncRoutes';
 import invitesRoutes from '../src/routes/invitesRoutes';
-import {getSyncData} from '../src/controllers/syncController';
 
 // Initialize App
 const app = express();
@@ -85,7 +84,6 @@ app.get('/', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'API is running' });
 });
 
-app.get('/api/sync', getSyncData);
 
 
 app.use('/api/invites', invitesRoutes)
@@ -99,6 +97,7 @@ app.use('/api/polls', pollRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/activity', activityRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/sync', syncRoutes);
 
 
 

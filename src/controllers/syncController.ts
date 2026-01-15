@@ -8,6 +8,7 @@ import Poll from '../models/Poll';
 export const getSyncData = async (req: Request, res: Response) => {
     try {
         const userId = req.user.id;
+        console.log(userId)
 
         // Get all Groups the user is a member of
         const groups = await Group.find({ "members.userId": userId });
