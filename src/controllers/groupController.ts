@@ -8,13 +8,20 @@ import Note from '../models/Note';
 import Group from '../models/Group';
 import mongoose from 'mongoose';
 import { checkPermission, GroupAction, ROLE_HIERARCHY } from '../utilities/permissions';
+import User from '../models/User';
 
 // Create a new group
 export const createGroup = async (req: AuthRequest, res: Response) => {
   try {
-    const { name, description, icon, color, isPinned } = req.body;
+    const { _id, name, description, icon, color } = req.body;
     const userId = new mongoose.Types.ObjectId(req.user.id);
+    const user = await User.findById(userId);
+
+    if ( !user ) {
+      return res.status(404).json({message: "User not found"});
+    }
     const newGroup: IGroup = await Group.create({
+      _id,
       name,
       description,
       authorId: userId,
@@ -23,6 +30,7 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
       members: [
         {
           userId,
+          username: user.username,
           role: 'owner',
           joinedAt: new Date(),
           isPinned: true,
