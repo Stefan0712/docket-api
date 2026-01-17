@@ -47,7 +47,14 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json(newGroup);
 
-  } catch (error) {
+  } catch (error: any) {
+
+    if (error.code === 11000) {
+      console.log("Group already exists. Returning existing");
+      const existingGroup = await Group.findById(req.body._id);
+      return res.status(200).json(existingGroup);
+    }
+
     console.error('Create Group Error:', error);
     res.status(500).json({ message: 'Server error creating group' });
   }
