@@ -1,4 +1,4 @@
-**Docket API** is the backend service for the Docket application, built with Node.js, Express, TypeScript, and MongoDB. It features offline-first synchronization capabilities, JWT authentication, and group collaboration tools.
+**Acta API** is the backend service for the Docket application, built with Node.js, Express, TypeScript, and MongoDB. It features offline-first synchronization capabilities, JWT authentication, and group collaboration tools.
 
 ## 🚀 Getting Started
 
@@ -10,7 +10,7 @@
 
 1.  **Clone the repository**
     ```bash
-    git clone [https://github.com/yourusername/docket-api.git](https://github.com/yourusername/docket-api.git)
+    git clone [https://github.com/stefan0712/acta-api.git](https://github.com/stefan0712/acta-api.git)
     cd docket-api
     ```
 
@@ -18,18 +18,8 @@
     ```bash
     npm install
     ```
-
-3.  **Environment Setup**
-    Create a `.env` file in the root directory:
-    ```env
-    PORT=5000
-    MONGO_URI=mongodb://localhost:27017/docket-db
-    JWT_SECRET=your_super_secret_key
-    JWT_EXPIRE=30d
-    FRONT_END_IP=<Your device ip if you try to connect from a separate device on the same network>
-    ```
-
-4.  **Run the Server**
+    
+3.  **Run the Server**
     ```bash
     # Development
     npm run dev
