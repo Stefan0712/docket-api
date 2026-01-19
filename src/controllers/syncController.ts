@@ -28,10 +28,20 @@ export const getSyncData = async (req: Request, res: Response) => {
         });
 
         // Fetch notes that belong to these groups
-        const notes = await Note.find({ 
-            groupId: { $in: groupIds } 
-        });
+        const notes = await Note.find({groupId: { $in: groupIds }})
+            .populate('authorId', 'username avatarUrl') // Populate author details
+            .sort({ createdAt: -1 }) // Newest first
+            .lean();
+        const flattenedNotes = notes.map(note => {
+            const author = note.authorId as any; 
 
+            return {
+                ...note,
+                authorId: author?._id || note.authorId,
+                authorUsername: author?.username || 'Unknown',
+                authorAvatar: author?.avatarUrl || null
+            };
+        });
         // Fetch polls that belong to these groups
         const polls = await Poll.find({ 
             groupId: { $in: groupIds } 
