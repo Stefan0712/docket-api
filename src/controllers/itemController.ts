@@ -15,6 +15,7 @@ export const createItem = async (req: AuthRequest, res: Response) => {
       _id, listId, name, qty, unit, category, store, 
       priority, reminder, deadline, description
     } = req.body;
+
     const list = await ShoppingList.findById(listId);
     
     if (!list) {
@@ -26,37 +27,61 @@ export const createItem = async (req: AuthRequest, res: Response) => {
     }
 
     // Create the Item
-    const newItem = await ShoppingListItem.create({
-      _id,
-      listId,
-      authorId: req.user.id,
-      description,
-      name,
-      qty,
-      unit,
-      category,
-      store,
-      priority: priority || 'normal',
-      deadline,
-      reminder: reminder || 0,
-      isReminderSent: false,
-      isDeleted: false
-    });
-    if(list.groupId){
-      try {
-        await logActivity({
-          groupId: list.groupId,
+    const resultWrapper = await ShoppingListItem.findOneAndUpdate(
+      { _id: _id }, // Filter by the ID sent
+      {
+        $setOnInsert: {
+          _id,
+          listId,
           authorId: req.user.id,
-          authorName: req.user.username,
-          category: 'CONTENT',
-          message: `${req.user.username} created "${newItem.name}" in ${list.name}`,
-          metadata: { listId: newItem.listId }
-        });
-      } catch (logError) {
-        console.error("Activity logging failed, but list was created:", logError);
+          description,
+          name,
+          qty,
+          unit,
+          category,
+          store,
+          priority: priority || 'normal',
+          deadline,
+          reminder: reminder || 0,
+          isReminderSent: false,
+          isDeleted: false
+        }
+      },
+      {
+        upsert: true,
+        new: true,
+        rawResult: true
       }
+    );
+
+    // Extract the actual document from the wrapper
+    const returnedItem = resultWrapper.value;
+    
+    // Check if it was an update (found) or insert (new)
+    const wasFound = resultWrapper.lastErrorObject?.updatedExisting;
+
+    if (wasFound) {
+      // Item already existed
+      return res.status(200).json(returnedItem);
+    } else {
+      // New Item Created
+      if (list.groupId) {
+        try {
+          await logActivity({
+            groupId: list.groupId,
+            authorId: req.user.id,
+            authorName: req.user.username,
+            category: 'CONTENT',
+            message: `${req.user.username} created "${returnedItem.name}" in ${list.name}`, 
+            metadata: { listId: returnedItem.listId }
+          });
+        } catch (logError) {
+          console.error("Activity logging failed, but list was created:", logError);
+        }
+      }
+
+      return res.status(201).json(returnedItem);
     }
-    res.status(201).json(newItem);
 
   } catch (error) {
     console.error('Create Item Error:', error);
