@@ -50,15 +50,20 @@ export const createItem = async (req: AuthRequest, res: Response) => {
       {
         upsert: true,
         new: true,
-        rawResult: true
+        includeResultMetadata: true
       }
     );
-
+    
     // Extract the actual document from the wrapper
     const returnedItem = resultWrapper.value;
     
     // Check if it was an update (found) or insert (new)
     const wasFound = resultWrapper.lastErrorObject?.updatedExisting;
+
+    // Safety check just in case 'result.value'
+    if (!returnedItem) {
+        throw new Error("Database failed to return the item document.");
+    }
 
     if (wasFound) {
       // Item already existed
