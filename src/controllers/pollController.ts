@@ -176,13 +176,13 @@ export const votePoll = async (req: AuthRequest, res: Response) => {
 
 export const addPollOption = async (req: AuthRequest, res: Response) => {
   try {
-    const { pollId, text } = req.body;
+    const { pollId, option } = req.body;
     const poll = await Poll.findById(pollId);
 
     if (!poll) return res.status(404).json({ message: "Poll not found" });
     if (!poll.allowCustomOptions && poll.authorId.toString() !== req.user.id) return res.status(403).json({ message: "Forbidden" });
 
-    poll.options.push({ text, votes: [] });
+    poll.options.push(option);
     const savedPoll = await poll.save();
     const newOption = savedPoll.options[savedPoll.options.length - 1];
     
